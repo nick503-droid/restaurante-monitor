@@ -42,3 +42,7 @@ logs/
 # ── Windows ──
 Thumbs.db
 Desktop.ini
+
+
+# Lock files de procesos Python
+ia/.lock_camara_*
