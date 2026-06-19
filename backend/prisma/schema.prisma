@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./restaurante.db"
+}
+
+model CatalogoClase {
+  id          Int               @id @default(autoincrement())
+  clase_id    Int               @unique // El ID real de YOLO (0, 1, 2, 3...)
+  nombre      String
+  descripcion String?
+  createdAt   DateTime          @default(now())
+  alertas     AlertaInfraccion[]
+}
+
+model Camara {
+  id             Int               @id @default(autoincrement())
+  nombre         String
+  source         String            // "0" para webcam o la URL RTSP
+  activa         Boolean           @default(true)
+  clases_vigilar String            @default("[]") // Formato JSON String para SQLite
+  createdAt      DateTime          @default(now())
+  alertas        AlertaInfraccion[]
+}
+
+
+model AlertaInfraccion {
+  id              Int           @id @default(autoincrement())
+  camaraId        Int
+  camara          Camara        @relation(fields: [camaraId], references: [id])
+  catalogoClaseId Int
+  catalogoClase   CatalogoClase @relation(fields: [catalogoClaseId], references: [id])
+  confianza       Float
+  duracion_seg    Float
+  rutaClip        String?       // ← Campo nuevo guardado exitosamente
+  timestamp       DateTime      @default(now())
+}

@@ -1,0 +1,44 @@
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# ── Modelos de IA (muy pesados) ──
+*.pt
+*.onnx
+*.weights
+
+# ── Videos de evidencia (muy pesados) ──
+evidencias/
+
+# ── Node.js ──
+node_modules/
+dist/
+build/
+
+# ── Base de datos ──
+*.db
+*.db-journal
+*.sqlite
+
+# ── Variables de entorno ──
+.env
+.env.local
+.env.production
+
+# ── Prisma ──
+backend/prisma/migrations/
+
+# ── Logs ──
+*.log
+logs/
+
+# ── VS Code ──
+.vscode/
+
+# ── Windows ──
+Thumbs.db
+Desktop.ini
