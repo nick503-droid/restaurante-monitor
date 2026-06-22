@@ -1,14 +1,12 @@
 <template>
   <div class="min-h-screen bg-slate-50 text-slate-800 p-6 space-y-6">
 
-    <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-slate-700">Monitor de Higiene</h1>
         <p class="text-slate-400 text-sm mt-1">Restaurante — En vivo</p>
       </div>
       <div class="flex items-center gap-3">
-        <!-- Indicador de conexión -->
         <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3 py-1.5">
           <div class="w-2 h-2 rounded-full"
             :class="conectado ? 'bg-teal-400 animate-pulse' : 'bg-rose-400'"></div>
@@ -16,7 +14,6 @@
             {{ conectado ? 'Conectado' : 'Desconectado' }}
           </span>
         </div>
-        <!-- Botón estadísticas -->
         <button @click="vistaActual = vistaActual === 'dashboard' ? 'estadisticas' : 'dashboard'"
           class="bg-white border border-slate-200 rounded-full px-3 py-1.5 text-sm text-slate-600
                  hover:bg-slate-50 transition-colors">
@@ -25,10 +22,8 @@
       </div>
     </div>
 
-    <!-- ══════════════ VISTA DASHBOARD ══════════════ -->
     <template v-if="vistaActual === 'dashboard'">
 
-      <!-- Stats rápidas -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
           <p class="text-slate-400 text-xs">Total alertas</p>
@@ -50,10 +45,10 @@
         </div>
       </div>
 
-      <!-- Panel principal -->
+      <CCTV />
+
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        <!-- Lista de alertas con filtros -->
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
           <div class="p-4 border-b border-slate-100 space-y-3">
             <div class="flex items-center justify-between">
@@ -63,7 +58,6 @@
               </span>
             </div>
 
-            <!-- Filtros -->
             <div class="grid grid-cols-2 gap-2">
               <select v-model="filtroClase"
                 class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 text-slate-600 bg-white">
@@ -79,7 +73,6 @@
               </select>
             </div>
 
-            <!-- Búsqueda por cámara -->
             <div class="flex gap-2">
               <select v-model="filtroCamara"
                 class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 text-slate-600 bg-white flex-1">
@@ -93,7 +86,6 @@
             </div>
           </div>
 
-          <!-- Lista -->
           <div class="divide-y divide-slate-50 max-h-96 overflow-y-auto">
             <div v-for="alerta in alertasFiltradas" :key="alerta.id"
               @click="$router.push(`/alerta/${alerta.id}`)"
@@ -133,7 +125,6 @@
           </div>
         </div>
 
-        <!-- Terminal Python -->
         <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
           <div class="p-3 border-b border-slate-700 flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -155,15 +146,12 @@
 
       </div>
 
-      <!-- Panel de salud del sistema -->
       <SaludSistema />
 
-      <!-- Configuración de cámaras -->
       <ConfiguracionCamaras />
 
     </template>
 
-    <!-- ══════════════ VISTA ESTADÍSTICAS ══════════════ -->
     <template v-else-if="vistaActual === 'estadisticas'">
       <Estadisticas :alertas="alertas" />
     </template>
@@ -174,6 +162,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { io, Socket } from 'socket.io-client'
+
+// 🔥 IMPORTAMOS NUESTRO NUEVO COMPONENTE DE CCTV EN VIVO
+import CCTV from './CCTV.vue' 
 import ConfiguracionCamaras from './ConfiguracionCamaras.vue'
 import SaludSistema from './SaludSistema.vue'
 import Estadisticas from './Estadisticas.vue'
@@ -277,6 +268,7 @@ const colorLinea = (linea: string) => {
   if (linea.includes('[ROI]'))      return 'text-cyan-400'
   if (linea.includes('[INFO]'))     return 'text-slate-400'
   if (linea.includes('[CONFIG]'))   return 'text-emerald-400'
+  if (linea.includes('[STREAM]'))   return 'text-fuchsia-400'
   return 'text-slate-500'
 }
 
