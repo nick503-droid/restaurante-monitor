@@ -11,6 +11,12 @@ export class CamarasController {
     return this.camarasService.listar();
   }
 
+  // Estado de salud del sistema — Vue puede consultarlo
+  @Get('estado')
+  estado() {
+    return this.camarasService.obtenerEstado();
+  }
+
   // Vue llama esto cuando el usuario cambia los checkboxes de clases
   @Patch(':id/clases')
   actualizarClases(
