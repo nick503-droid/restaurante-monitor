@@ -19,6 +19,9 @@
                  hover:bg-slate-50 transition-colors">
           {{ vistaActual === 'dashboard' ? '📊 Estadísticas' : '← Dashboard' }}
         </button>
+        <a href="http://localhost:3000/api/alertas/exportar" download class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-semibold shadow-md">
+        📥 Exportar a Excel
+      </a>
       </div>
     </div>
 
@@ -160,8 +163,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, provide } from 'vue'
 import { io, Socket } from 'socket.io-client'
+
 
 // 🔥 IMPORTAMOS NUESTRO NUEVO COMPONENTE DE CCTV EN VIVO
 import CCTV from './CCTV.vue' 
@@ -173,6 +177,7 @@ import Estadisticas from './Estadisticas.vue'
 const alertas     = ref<any[]>([])
 const logs        = ref<string[]>([])
 const conectado   = ref(false)
+provide('conectado', conectado)
 const vistaActual = ref<'dashboard' | 'estadisticas'>('dashboard')
 const terminalRef = ref<HTMLElement | null>(null)
 let socket: Socket | null = null

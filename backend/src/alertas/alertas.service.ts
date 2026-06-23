@@ -1,13 +1,16 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { EventosGateway } from '../gateway/eventos.gateway';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class AlertasService {
   constructor(
     private prisma: PrismaService,
     private gateway: EventosGateway,
-  ) {}
+  ) { }
 
   async crearAlerta(dto: {
     camaraId: number;
@@ -26,25 +29,118 @@ export class AlertasService {
 
     const alerta = await this.prisma.alertaInfraccion.create({
       data: {
-        camaraId:        dto.camaraId,
+        camaraId: dto.camaraId,
         catalogoClaseId: catalogoClase.id,
-        confianza:       dto.confianza,
-        duracion_seg:    dto.duracion_seg,
-        rutaClip:        dto.rutaClip ?? null,
+        confianza: dto.confianza,
+        duracion_seg: dto.duracion_seg,
+        rutaClip: dto.rutaClip ?? null,
       },
       include: {
-        camara:        true,
+        camara: true,
         catalogoClase: true,
       },
     });
 
     this.gateway.emitirAlerta(alerta);
+
+    // 🔥 1. MAGIA DE TELEGRAM 🔥
+    try {
+      const TELEGRAM_TOKEN = '8952522238:AAG3AG2HEqMWXBqRvEGhtg4OKiQSnQLF4Lc';
+      const CHAT_ID = '8862401955';
+
+      const mensaje = `🚨 *NUEVA INFRACCIÓN DETECTADA*\n\n` +
+        `📷 *Cámara:* ${alerta.camara.nombre}\n` +
+        `⚠️ *Infracción:* ${alerta.catalogoClase.nombre}\n` +
+        `📊 *Confianza:* ${(alerta.confianza * 100).toFixed(1)}%\n` +
+        `⏱️ *Duración:* ${alerta.duracion_seg.toFixed(1)}s`;
+
+      if (alerta.rutaClip) {
+        const rutaAbsoluta = path.join(process.cwd(), '..', alerta.rutaClip);
+
+        if (fs.existsSync(rutaAbsoluta)) {
+          console.log(`[Telegram] Adjuntando video: ${rutaAbsoluta}`);
+          const fileBuffer = fs.readFileSync(rutaAbsoluta);
+          const blob = new Blob([fileBuffer], { type: 'video/webm' });
+
+          const formData = new FormData();
+          formData.append('chat_id', CHAT_ID);
+          formData.append('caption', mensaje);
+          formData.append('parse_mode', 'Markdown');
+          formData.append('video', blob, 'infraccion.webm');
+
+          const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendVideo`, {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await response.json();
+          if (!data.ok) console.error('❌ [Telegram] Falló el video:', data.description);
+          else console.log('✅ [Telegram] ¡Video entregado con éxito!');
+        }
+      } else {
+        console.log('[Telegram] No se encontró video, enviando solo texto...');
+        const responseTxt = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: mensaje,
+            parse_mode: 'Markdown'
+          })
+        });
+        const dataTxt = await responseTxt.json();
+        if (!dataTxt.ok) console.error('❌ [Telegram] Falló el texto:', dataTxt.description);
+      }
+    } catch (error) {
+      console.error('❌ [Telegram] Error crítico de red:', error);
+    }
+
+    // ✉️ 2. MAGIA DE CORREO ELECTRÓNICO (SMTP) ✉️
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'walteredenilsonramirezderas@gmail.com', 
+          pass: 'fjadrclmkktabdoz',
+        },
+      });
+
+      const mailOptions: any = {
+        from: '"Sistema CCTV IA" <walteredenilsonramirezderas@gmail.com>',
+        to: 'nicky70022040@gmail.com',
+        // 🔥 EL PREFIJO DINÁMICO ESTÁ AQUÍ 🔥
+        subject: `[${alerta.camara.nombre}] 🚨 Infracción: ${alerta.catalogoClase.nombre}`,
+        text: `Hola Jefe,\n\nSe ha detectado una nueva incidencia en el sistema automático:\n\n` +
+              `Cámara: ${alerta.camara.nombre}\n` +
+              `Confianza de la IA: ${(alerta.confianza * 100).toFixed(1)}%\n` +
+              `Duración: ${alerta.duracion_seg.toFixed(1)}s\n\n` +
+              `Adjunto encontrará el videoclip de evidencia.`,
+        attachments: [],
+      };
+
+      if (alerta.rutaClip) {
+        const rutaAbsoluta = path.join(process.cwd(), '..', alerta.rutaClip);
+        if (fs.existsSync(rutaAbsoluta)) {
+          mailOptions.attachments.push({
+            filename: 'evidencia_infraccion.webm',
+            path: rutaAbsoluta,
+          });
+          console.log('[Email] Video adjuntado correctamente al correo.');
+        }
+      }
+
+      await transporter.sendMail(mailOptions);
+      console.log('✅ [Email] ¡Reporte enviado por correo exitosamente!');
+    } catch (error) {
+      console.error('❌ [Email] Error al enviar el correo:', error);
+    }
+
     return alerta;
   }
 
   async listarRecientes() {
     return this.prisma.alertaInfraccion.findMany({
-      take:    50,
+      take: 50,
       orderBy: { timestamp: 'desc' },
       include: { camara: true, catalogoClase: true },
     });
@@ -52,7 +148,14 @@ export class AlertasService {
 
   async obtenerPorId(id: number) {
     return this.prisma.alertaInfraccion.findUnique({
-      where:   { id },
+      where: { id },
+      include: { camara: true, catalogoClase: true },
+    });
+  }
+
+  async listarTodas() {
+    return this.prisma.alertaInfraccion.findMany({
+      orderBy: { timestamp: 'desc' },
       include: { camara: true, catalogoClase: true },
     });
   }

@@ -12,7 +12,7 @@
                     class="w-full border border-slate-300 p-2.5 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     <option :value="null">-- Apagada --</option>
                     <option v-for="cam in camaras" :key="cam.id" :value="cam.id">
-                        {{ cam.nombre }} (Ubicación: {{ cam.ubicacion }})
+                        {{ cam.nombre }} — fuente: {{ cam.source }}
                     </option>
                 </select>
             </div>
@@ -22,7 +22,7 @@
                     class="w-full border border-slate-300 p-2.5 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     <option :value="null">-- Apagada --</option>
                     <option v-for="cam in camaras" :key="cam.id" :value="cam.id">
-                        {{ cam.nombre }} (Ubicación: {{ cam.ubicacion }})
+                        {{ cam.nombre }} — fuente: {{ cam.source }}
                     </option>
                 </select>
             </div>

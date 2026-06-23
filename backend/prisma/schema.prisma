@@ -38,3 +38,4 @@ model AlertaInfraccion {
   rutaClip        String?       // ← Campo nuevo guardado exitosamente
   timestamp       DateTime      @default(now())
 }
+

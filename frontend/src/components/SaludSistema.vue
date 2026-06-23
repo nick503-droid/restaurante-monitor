@@ -78,7 +78,7 @@ import { ref, onMounted, onUnmounted, inject } from 'vue'
 import { provide } from 'vue'
 
 const conectado = inject('conectado', ref(false))
-provide('conectado', conectado)
+
 
 
 const estado = ref({

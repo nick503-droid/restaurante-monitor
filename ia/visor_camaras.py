@@ -173,6 +173,9 @@ try:
 
         curr_time = time.time()
         fps_real = 1.0 / max(curr_time - prev_time, 1e-9)
+        # Loguea cada ~5 segundos para no saturar
+        if int(curr_time) % 5 == 0:
+            print(f'[FPS] {fps_real:.1f} fps en tiempo real', flush=True)
         prev_time = curr_time
 
         frame_para_video = frame.copy()

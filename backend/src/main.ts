@@ -11,16 +11,6 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   });
 
-  // process.cwd() siempre apunta a la carpeta desde donde arrancaste el proceso
-  // Si corres "npm run start:dev" desde backend/, process.cwd() = backend/
-  // Entonces: backend/ → .. → restaurante-monitor/ → evidencias/
-  const evidenciasPath = join(process.cwd(), '..', 'evidencias');
-  console.log(`[Static] Sirviendo evidencias desde: ${evidenciasPath}`);
-
-  app.useStaticAssets(evidenciasPath, {
-    prefix: '/evidencias',
-  });
-
   await app.listen(3000);
   console.log('Backend corriendo en http://localhost:3000');
 }
