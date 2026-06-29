@@ -19,9 +19,9 @@
                  hover:bg-slate-50 transition-colors">
           {{ vistaActual === 'dashboard' ? '📊 Estadísticas' : '← Dashboard' }}
         </button>
-        <a href="http://localhost:3000/api/alertas/exportar" download class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-semibold shadow-md">
-        📥 Exportar a Excel
-      </a>
+        <a :href="`${API_URL}/api/alertas/exportar`" download class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-semibold shadow-md">
+          📥 Exportar a Excel
+        </a>
       </div>
     </div>
 
@@ -166,15 +166,39 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, provide } from 'vue'
 import { io, Socket } from 'socket.io-client'
 
-
-// 🔥 IMPORTAMOS NUESTRO NUEVO COMPONENTE DE CCTV EN VIVO
 import CCTV from './CCTV.vue' 
 import ConfiguracionCamaras from './ConfiguracionCamaras.vue'
 import SaludSistema from './SaludSistema.vue'
 import Estadisticas from './Estadisticas.vue'
 
+// ── Tipado estricto para reemplazar los "any" ──
+interface CatalogoClase {
+  id: number;
+  nombre: string;
+}
+
+interface Camara {
+  id: number;
+  nombre: string;
+}
+
+interface Alerta {
+  id: number;
+  camaraId: number;
+  catalogoClaseId: number;
+  confianza: number;
+  duracion_seg: number;
+  timestamp: string;
+  rutaClip?: string;
+  camara?: Camara;
+  catalogoClase?: CatalogoClase;
+}
+
+// ── Variables de Entorno ──
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
 // ── Estado principal ──
-const alertas     = ref<any[]>([])
+const alertas     = ref<Alerta[]>([])
 const logs        = ref<string[]>([])
 const conectado   = ref(false)
 provide('conectado', conectado)
@@ -287,13 +311,13 @@ const scrollTerminal = () => {
 // ── Ciclo de vida ──
 onMounted(async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/alertas')
+    const res = await fetch(`${API_URL}/api/alertas`)
     alertas.value = await res.json()
   } catch {
     console.error('No se pudo conectar al backend')
   }
 
-  socket = io('http://localhost:3000', { transports: ['websocket', 'polling'] })
+  socket = io(API_URL, { transports: ['websocket', 'polling'] })
 
   socket.on('connect', () => {
     conectado.value = true
@@ -305,12 +329,12 @@ onMounted(async () => {
     logs.value.push('[WS] Desconectado')
   })
 
-  socket.on('nuevaAlerta', (alerta: any) => {
+  socket.on('nuevaAlerta', (alerta: Alerta) => {
     alertas.value.unshift(alerta)
     if (alertas.value.length > 200) alertas.value.pop()
   })
 
-  socket.on('logCamara', ({ camaraId, linea }: any) => {
+  socket.on('logCamara', ({ camaraId, linea }: { camaraId: number, linea: string }) => {
     logs.value.push(`[CAM-${camaraId}] ${linea}`)
     if (logs.value.length > 500) logs.value.shift()
     scrollTerminal()

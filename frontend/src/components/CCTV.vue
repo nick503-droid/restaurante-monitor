@@ -31,7 +31,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             <div class="bg-black rounded-xl aspect-video overflow-hidden relative shadow-lg border border-slate-800">
-                <img v-if="cam1" :src="`http://localhost:${5000 + cam1}/video_feed`"
+                <img v-if="cam1" :src="`http://${streamHost}:${5000 + cam1}/video_feed`"
                     class="w-full h-full object-cover" />
                 <div v-else class="flex flex-col items-center justify-center h-full text-slate-600">
                     <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,7 +48,7 @@
             </div>
 
             <div class="bg-black rounded-xl aspect-video overflow-hidden relative shadow-lg border border-slate-800">
-                <img v-if="cam2" :src="`http://localhost:${5000 + cam2}/video_feed`"
+                <img v-if="cam2" :src="`http://${streamHost}:${5000 + cam2}/video_feed`"
                     class="w-full h-full object-cover" />
                 <div v-else class="flex flex-col items-center justify-center h-full text-slate-600">
                     <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,14 +71,29 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-const camaras = ref([])
-const cam1 = ref(null)
-const cam2 = ref(null)
+// Tipado estricto para las cámaras
+interface Camara {
+  id: number;
+  nombre: string;
+  source: string;
+}
+
+const camaras = ref<Camara[]>([])
+const cam1 = ref<number | null>(null)
+const cam2 = ref<number | null>(null)
+
+// Manejo seguro de las variables de entorno de Vite
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+// Auto-detectar la IP del host si la variable no existe (ideal para la demo)
+const streamHost = import.meta.env.VITE_STREAM_HOST || window.location.hostname
 
 onMounted(async () => {
     try {
-        const res = await fetch('http://localhost:3000/api/camaras')
+        const res = await fetch(`${API_URL}/api/camaras`)
+        if (!res.ok) throw new Error('Falló la conexión al backend')
+        
         camaras.value = await res.json()
+        
         // Auto-seleccionar la primera cámara si existe
         if (camaras.value.length > 0) {
             cam1.value = camaras.value[0].id

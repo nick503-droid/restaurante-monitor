@@ -152,19 +152,41 @@ def iniciar_grabacion(track_id: int, clase_id: int):
     for f in buffer_pre: writer.write(f)
     grabando_para[track_id] = {'writer': writer, 'frames_restantes': int(FPS * args.clip_post), 'ruta': ruta, 'clase_id': clase_id}
 
+def enviar_alerta_backend(payload):
+    """
+    Función auxiliar que corre en un hilo separado.
+    Evita que las peticiones HTTP bloqueen el feed de video y el modelo YOLO.
+    """
+    try:
+        print(f"[API] Enviando alerta de clase {payload['catalogoClaseId']} al backend...", flush=True)
+        response = requests.post(f"{args.backend_url}/api/alertas", json=payload, timeout=5)
+        response.raise_for_status()  # Lanza un error si NestJS no devuelve un código 2xx
+        print(f"[API] Alerta enviada con éxito (Status: {response.status_code})", flush=True)
+    except requests.exceptions.RequestException as e:
+        # Esto imprimirá el error exacto (ej. conexión rechazada, timeout) en tu terminal de Vue
+        print(f"[ERROR API] Falló el envío de la alerta al backend: {e}", flush=True)
+
 def finalizar_grabacion(track_id: int, confianza: float, duracion: float):
     global alertas_esta_hora
     datos = grabando_para.pop(track_id)
     datos['writer'].release()
     ruta_relativa = os.path.relpath(datos['ruta'], os.path.join(BASE_DIR, '..')).replace('\\', '/')
-    try:
-        requests.post(f'{args.backend_url}/api/alertas', json={
-            'camaraId': args.camara_id, 'catalogoClaseId': datos['clase_id'],
-            'confianza': round(confianza, 4), 'duracion_seg': round(duracion, 2), 'rutaClip': ruta_relativa
-        }, timeout=5)
-    except: pass
-    cooldowns[track_id], alertas_esta_hora = time.time(), alertas_esta_hora + 1
+    
+    # 1. Preparamos el cuerpo de la petición
+    payload = {
+        'camaraId': args.camara_id, 
+        'catalogoClaseId': datos['clase_id'],
+        'confianza': round(confianza, 4), 
+        'duracion_seg': round(duracion, 2), 
+        'rutaClip': ruta_relativa
+    }
 
+    # 2. Despachamos la petición HTTP en un hilo (Background Thread)
+    hilo_api = threading.Thread(target=enviar_alerta_backend, args=(payload,), daemon=True)
+    hilo_api.start()
+
+    # 3. Actualizamos los contadores inmediatamente
+    cooldowns[track_id], alertas_esta_hora = time.time(), alertas_esta_hora + 1
 # - BUCLE PRINCIPAL -
 try:
     while True:
